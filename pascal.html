@@ -1,0 +1,2066 @@
+<!--
+  KanjiVGEditor - a web app to edit KanjiVG files.
+  Copyright (C) 2025 Pascal Baillehache baillehache.pascal@gmail.com
+  https://baillehachepascal.dev
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with this program. If not, see <http://www.gnu.org/licenses/>.
+-->
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <style>
+html { width: 100%; height: 100%; }
+body {
+  background-color: #aaaaaa; color: #433126;
+  font-family:  serif; font-size: 20px;
+  width: 100%; height: 100%; margin: 0;
+}
+#divFooter {
+  text-align: center; font-size: 12px;
+  margin: auto; margin-top: 20px; width: 100%; padding: 5px;
+  background-color: #aaaaaa;
+}
+input[type="button"] {
+  background-color: #fecb5e; box-shadow: 2px 2px 10px #888888;
+  margin: 2px 5px; padding: 2px 4px; height: 24px;
+  border: 1px solid #fee9aa; border-radius: 5px; color: #624838;
+}
+input[type="submit"] {
+  background-color: #fecb5e; box-shadow: 2px 2px 10px #888888;
+  margin: 2px 5px; padding: 2px 4px; height: 24px;
+  border: 1px solid #fee9aa; border-radius: 5px; color: #624838;
+}
+select {
+  background-color: #fecb5e; box-shadow: 2px 2px 10px #888888; color: #624838;
+  margin: 2px 5px; padding: 2px 4px; max-width: 290px;
+  font: 13px sans-serif; text-decoration: none; font: 13px sans-serif;
+  border: 1px solid #fee9aa; border-radius: 5px;
+}
+#divMain { margin:auto; text-align: center; width: 90%;}
+#divTitle { font-size: 30px; margin:auto; text-align: center; }
+.divTile {
+   width: 45%; min-width: 400px; vertical-align: top;
+  position: relative; margin: 10px; padding: 10px;
+  border: 1px solid #888888; border-radius: 3px; background-color: #cccccc;
+  display: inline-block; overflow: auto; box-shadow: 4px 4px 4px 2px #999999;
+}
+#divMsg { width: 90%; }
+#divRaw { height: 585px; }
+#divStructure { height: 585px; }
+#txtRawData { width: 100%; height: 520px; box-sizing: border-box; }
+#divKanji { height: 530px; overflow: auto; }
+.divField {}
+.divGroup {
+  border: 1px solid #888888; border-radius: 3px; background-color: #dddddd;
+  margin-left: 5px; margin-bottom: 1px; margin-right: 1px;
+}
+.divPath {
+  border: 1px solid #888888; border-radius: 3px; background-color: #ccccdd;
+  margin-left: 1px; margin-bottom: 1px; margin-right: 1px;
+}
+.divText {
+  border: 1px solid #888888; border-radius: 3px; background-color: #ccddcc;
+  margin-left: 1px; margin-bottom: 1px; margin-right: 1px;
+}
+.divKey { width: 30%; display: inline-block; }
+.inpVal { width: 65%; }
+.divOther {}
+#divDrawing { width: 560px; height: 585px; }
+#canKanji { width: 545px; height: 545px; margin: 3px; }
+.divTool { position: relative; }
+.divUserInput {
+  width: 350px; border: 1px solid #888888; border-radius: 3px;
+  padding: 5px;
+  display: none; box-shadow: 4px 4px 4px 2px #999999;
+  background-color: #cccccc; position: absolute; top: 10px; left: 10px;
+}
+.inpConverter { width: 50px; }
+    </style>
+  </head>
+  <title> KanjiVGEditor </title>
+  <body>
+    <div id="divMain">
+      <div id="divTitle" class="divRow">
+        KanjiVGEditor
+      </div>
+      <div class='divTile' id='divMain'>
+        <div class='divTile' id='divRaw'>
+          <div class='divTool'>
+            <input type="button" value="new" onclick="editor.BtnNewClick();">
+            <input type="button" value="load" onclick="editor.BtnLoadClick();">
+            <input type="button" value="decode" onclick="editor.BtnDecodeClick();">
+            <input type="button" value="save" onclick="editor.BtnSaveClick();">
+          </div>
+          <textarea id="txtRawData">
+          </textarea>
+          kanji: <input class="inpConverter" type="text" id="inpKanji" oninput="editor.ConvertKanji();"> hexa: <input class="inpConverter" type="text" id="inpHexa" oninput="editor.ConvertHexa();">
+        </div>
+        <div class='divTile' id='divStructure' style='display:none;'>
+          <div class='divTool'>
+            <input type="button" value="encode" onclick="editor.BtnEncodeClick();">
+            <input type="button" value="add" onclick="if(editor.selectedId != -1) editor.elem('divNewElem').style.display='block'; else editor.PushMsg('No element selected');">
+            <div class="divUserInput" id="divNewElem">
+              Add tag: <select id="selTag">
+                <option value="g">g</option>
+                <option value="path">path</option>
+                <option value="text">text</option>
+              </select><br>
+              <input type="button" value="add" onclick="editor.BtnAddElemClick();">
+              <input type="button" value="cancel" onclick="editor.elem('divNewElem').style.display='none';">
+            </div>
+            <input type="button" value="delete" onclick="editor.BtnDeleteElemClick();">
+            <input type="button" value="attribute" onclick="if(editor.selectedId != -1) editor.elem('divAttribute').style.display='block'; else editor.PushMsg('No element selected');">
+            <div class="divUserInput" id="divAttribute">
+              Add attribute: <select id="selAttribute">
+                <option value="kvg:element">kvg:element</option>
+                <option value="kvg:type">kvg:type</option>
+                <option value="kvg:number">kvg:number</option>
+                <option value="kvg:original">kvg:original</option>
+                <option value="kvg:part">kvg:part</option>
+                <option value="kvg:partial">kvg:partial</option>
+                <option value="kvg:phon">kvg:phon</option>
+                <option value="kvg:position">kvg:position</option>
+                <option value="kvg:radical">kvg:radical</option>
+                <option value="kvg:radicalForm">kvg:radicalForm</option>
+                <option value="kvg:tradForm">kvg:tradForm</option>
+                <option value="kvg:variant">kvg:variant</option>
+              </select><br>
+              <input type="button" value="add" onclick="editor.BtnAddAttributeClick();">
+              <input type="button" value="cancel" onclick="editor.elem('divAttribute').style.display='none';">
+            </div>
+            <input type="button" value="id" onclick="editor.BtnIdClick();">
+            <input type="button" value="copy" onclick="editor.BtnCopyClick();">
+            <input type="button" value="paste" onclick="editor.BtnPasteClick();">
+            <input type="button" value="undo" onclick="editor.Undo();">
+          </div>
+          <div id='divKanji'></div>
+        </div>
+        <div class='divTile' id='divDrawing'>
+          <div class='divTool'>
+            <input type="button" id="btnCloseTool" value="<" onclick="editor.SetToolMode('select');">
+            <input type="button" id="btnView" value="view" onclick="editor.SetToolMode('view');">
+            <input type="button" id="btnSelect" value="select" onclick="editor.SetToolMode('select');">
+            <input type="button" id="btnMove" value="move" onclick="editor.SetToolMode('move');">
+            <input type="button" id="btnZoomIn" value="zoom in" onclick="editor.SetToolMode('zoom_in');">
+            <input type="button" id="btnZoomOut" value="zoom out" onclick="editor.SetToolMode('zoom_out');">
+            <input type="button" id="btnResetView" value="reset" onclick="editor.SetToolMode('reset_view');">
+            <input type="button" id="btnBackground" value="background" onclick="editor.SetToolMode('background');">
+            <input type="button" id="btnTransform" value="transform" onclick="editor.SetToolMode('transform');">
+            <input type="button" id="btnTranslate" value="translate" onclick="editor.SetToolMode('translate');">
+            <input type="button" id="btnScale" value="scale" onclick="editor.SetToolMode('scale');">
+            <input type="button" id="btnDraw" value="draw" onclick="editor.SetToolMode('draw');">
+            <input type="button" id="btnEditCtrl" value="edit" onclick="editor.SetToolMode('edit_ctrl');">
+            <input type="button" id="btnAddCtrl" value="add" onclick="editor.SetToolMode('add_ctrl');">
+            <input type="button" id="btnRemoveCtrl" value="remove" onclick="editor.SetToolMode('remove_ctrl');">
+          </div>
+          <canvas id='canKanji'></canvas>
+        </div>
+      </div>
+      <div class='divTile' id='divMsg'>
+      </div>
+    </div>
+    <div id="divFooter">
+      Version <span id="spanVersion"></span>, copyright 2025 <a target="blank_" 
+      href="https://baillehachepascal.dev">Baillehache Pascal</a>,
+      more info <a target="_blank"
+      href="https://baillehachepascal.dev/2025/kanjivgeditor.php">here</a>. KanjiVG official website <a target="_blank" href="https://kanjivg.tagaini.net/">here</a>
+    </div>
+   </body>
+  <script>
+// Stroke in the kanji
+class KanjiStroke {
+  constructor() {
+    // Array of controls {pos:[x,y],type:"anchor|handle"}
+    this.ctrls = [];
+  }
+  // Draw the stroke on a context
+  Draw(ctx, zoom, selected) {
+    if(selected) ctx.strokeStyle = "red";
+    else ctx.strokeStyle = "black";
+    // Draw the path
+    for(var i = 0; i < (this.ctrls.length-1)/3; i += 1) {
+      let j = i * 3;
+      ctx.beginPath();
+      ctx.moveTo(
+        this.ctrls[j+0].pos[0] * zoom[2] + zoom[0],
+        this.ctrls[j+0].pos[1] * zoom[2] + zoom[1]);
+      ctx.bezierCurveTo(
+        this.ctrls[j+1].pos[0] * zoom[2] + zoom[0],
+        this.ctrls[j+1].pos[1] * zoom[2] + zoom[1],
+        this.ctrls[j+2].pos[0] * zoom[2] + zoom[0],
+        this.ctrls[j+2].pos[1] * zoom[2] + zoom[1],
+        this.ctrls[j+3].pos[0] * zoom[2] + zoom[0],
+        this.ctrls[j+3].pos[1] * zoom[2] + zoom[1]);
+      ctx.stroke();
+    }
+    // Loop on the controls
+    this.ctrls.forEach((ctrl) => {
+      // Draw the control
+      ctx.beginPath();
+      ctx.arc(
+        ctrl.pos[0] * zoom[2] + zoom[0],
+        ctrl.pos[1] * zoom[2] + zoom[1],
+        3, 0, 2 * Math.PI);
+      if(ctrl.type == "anchor") {
+        ctx.fillStyle = ctx.strokeStyle;
+        ctx.fill();
+      } else {
+        ctx.stroke();
+      }
+    });
+  }
+  // Get the min distance from a position to the stroke's controls
+  GetMinDistFromCtrlToPos(pos) {
+    let dist = 1000.0;
+    this.ctrls.forEach((ctrl) => {
+      let d = Math.sqrt(
+        (ctrl.pos[0] - pos[0]) * (ctrl.pos[0] - pos[0]) +
+        (ctrl.pos[1] - pos[1]) * (ctrl.pos[1] - pos[1]));
+      if(dist > d) dist = d;
+    });
+    return dist;
+  }
+  // Apply a translation vector
+  Translate(u) {
+    this.ctrls.forEach((ctrl) => {
+      ctrl.pos[0] += u[0];
+      ctrl.pos[1] += u[1];
+    });
+  }
+  // Apply a translation vector to a control
+  TranslateCtrl(iCtrl, u) {
+    // If the control is an anchor
+    if(this.ctrls[iCtrl].type == "anchor") {
+      // Move the anchor
+      this.ctrls[iCtrl].pos[0] += u[0];
+      this.ctrls[iCtrl].pos[1] += u[1];
+      // Move the previous handle if any
+      if(iCtrl > 0) {
+        this.ctrls[iCtrl-1].pos[0] += u[0];
+        this.ctrls[iCtrl-1].pos[1] += u[1];
+      }
+      // Move the next handle if any
+      if(iCtrl < this.ctrls.length - 1) {
+        this.ctrls[iCtrl+1].pos[0] += u[0];
+        this.ctrls[iCtrl+1].pos[1] += u[1];
+      }
+    // Else, it's a handle
+    } else {
+      // Move the handle
+      this.ctrls[iCtrl].pos[0] += u[0];
+      this.ctrls[iCtrl].pos[1] += u[1];
+      // Move the opposite handle
+      if(iCtrl > 1 && this.ctrls[iCtrl-1].type == "anchor") {
+        let dopp = Math.sqrt(
+          (this.ctrls[iCtrl-2].pos[0] - this.ctrls[iCtrl-1].pos[0]) *
+          (this.ctrls[iCtrl-2].pos[0] - this.ctrls[iCtrl-1].pos[0]) +
+          (this.ctrls[iCtrl-2].pos[1] - this.ctrls[iCtrl-1].pos[1]) *
+          (this.ctrls[iCtrl-2].pos[1] - this.ctrls[iCtrl-1].pos[1]));
+        let d = Math.sqrt(
+          (this.ctrls[iCtrl].pos[0] - this.ctrls[iCtrl-1].pos[0]) *
+          (this.ctrls[iCtrl].pos[0] - this.ctrls[iCtrl-1].pos[0]) +
+          (this.ctrls[iCtrl].pos[1] - this.ctrls[iCtrl-1].pos[1]) *
+          (this.ctrls[iCtrl].pos[1] - this.ctrls[iCtrl-1].pos[1]));
+        this.ctrls[iCtrl-2].pos[0] =
+          this.ctrls[iCtrl-1].pos[0] +
+          (this.ctrls[iCtrl-1].pos[0] - this.ctrls[iCtrl].pos[0]) / d * dopp;
+        this.ctrls[iCtrl-2].pos[1] =
+          this.ctrls[iCtrl-1].pos[1] +
+          (this.ctrls[iCtrl-1].pos[1] - this.ctrls[iCtrl].pos[1]) / d * dopp;
+      } else if(iCtrl < this.ctrls.length - 2 && this.ctrls[iCtrl+1].type == "anchor") {
+        let dopp = Math.sqrt(
+          (this.ctrls[iCtrl+2].pos[0] - this.ctrls[iCtrl+1].pos[0]) *
+          (this.ctrls[iCtrl+2].pos[0] - this.ctrls[iCtrl+1].pos[0]) +
+          (this.ctrls[iCtrl+2].pos[1] - this.ctrls[iCtrl+1].pos[1]) *
+          (this.ctrls[iCtrl+2].pos[1] - this.ctrls[iCtrl+1].pos[1]));
+        let d = Math.sqrt(
+          (this.ctrls[iCtrl].pos[0] - this.ctrls[iCtrl+1].pos[0]) *
+          (this.ctrls[iCtrl].pos[0] - this.ctrls[iCtrl+1].pos[0]) +
+          (this.ctrls[iCtrl].pos[1] - this.ctrls[iCtrl+1].pos[1]) *
+          (this.ctrls[iCtrl].pos[1] - this.ctrls[iCtrl+1].pos[1]));
+        this.ctrls[iCtrl+2].pos[0] =
+          this.ctrls[iCtrl+1].pos[0] +
+          (this.ctrls[iCtrl+1].pos[0] - this.ctrls[iCtrl].pos[0]) / d * dopp;
+        this.ctrls[iCtrl+2].pos[1] =
+          this.ctrls[iCtrl+1].pos[1] +
+          (this.ctrls[iCtrl+1].pos[1] - this.ctrls[iCtrl].pos[1]) / d * dopp;
+      }
+    }
+  }
+  // Encode the stroke to SVG
+  Encode(relativeCoord=true) {
+    // Move to first anchor
+    let str = "M" + this.ctrls[0].pos[0].toFixed(2) + "," + this.ctrls[0].pos[1].toFixed(2) + ",";
+    let pos = this.ctrls[0].pos;
+    // If encoding with relative coordinates
+    if(relativeCoord) {
+      for(var i = 0; i < (this.ctrls.length-1)/3; i += 1) {
+        const j = i * 3 + 1;
+        str += "c" +
+          (this.ctrls[j].pos[0] - pos[0]).toFixed(2) + "," + (this.ctrls[j].pos[1] - pos[1]).toFixed(2) + "," +
+          (this.ctrls[j+1].pos[0] - pos[0]).toFixed(2) + "," + (this.ctrls[j+1].pos[1] - pos[1]).toFixed(2) + "," +
+          (this.ctrls[j+2].pos[0] - pos[0]).toFixed(2) + "," + (this.ctrls[j+2].pos[1] - pos[1]).toFixed(2);
+        pos = this.ctrls[j+2].pos;
+      }
+    // Else, encoding with absolute coordinates
+    } else {
+      for(var i = 0; i < (this.ctrls.length-1)/3; i += 1) {
+        const j = i * 3 + 1;
+        str += "C" +
+          this.ctrls[j].pos[0].toFixed(2) + "," + this.ctrls[j].pos[1].toFixed(2) + "," +
+          this.ctrls[j+1].pos[0].toFixed(2) + "," + this.ctrls[j+1].pos[1].toFixed(2) + "," +
+          this.ctrls[j+2].pos[0].toFixed(2) + "," + this.ctrls[j+2].pos[1].toFixed(2);
+      }
+    }
+    return str;
+  }
+  // Apply a scaling vector relative to a center position
+  Scale(u, center) {
+    this.ctrls.forEach((ctrl) => {
+      ctrl.pos[0] += (ctrl.pos[0] - center[0]) * (u[0] - 1.0);
+      ctrl.pos[1] += (ctrl.pos[1] - center[1]) * (u[1] - 1.0);
+    });
+  }
+  // Get the center of the path (average of the anchors)
+  GetCenter() {
+    let center = [0.0, 0.0];
+    let n = 0.0;
+    this.ctrls.forEach((ctrl) => {
+      if(ctrl.type == "anchor") {
+        center[0] += ctrl.pos[0];
+        center[1] += ctrl.pos[1];
+        n += 1.0;
+      }
+    });
+    return [center[0] / n, center[1] / n];
+  }
+  // Get the nearest ctrl from the searched position in the path
+  GetNearestCtrlToPos(pos) {
+    let res = [0, 1000.0];
+    this.ctrls.forEach((ctrl, i) => {
+      let d = Math.sqrt(
+        (ctrl.pos[0] - pos[0]) * (ctrl.pos[0] - pos[0]) +
+        (ctrl.pos[1] - pos[1]) * (ctrl.pos[1] - pos[1]));
+      if(res[1] > d) {
+        res[0] = i;
+        res[1] = d;
+      }
+    });
+    return res;
+  }
+  // Remove a control. No effect if the control is not an anchor or the path
+  // has only one segment. Return true if a control has actually been removed,
+  // else return false
+  RemoveCtrl(iCtrl) {
+    // If the control in argument is an anchor and the path has several segment
+    if(this.ctrls[iCtrl].type == "anchor" && this.ctrls.length > 4) {
+      // Remove the anchor and its neighbour handles
+      if(iCtrl == 0) {
+        this.ctrls = this.ctrls.slice(3);
+      } else if(iCtrl == this.ctrls.length - 1) {
+        this.ctrls = this.ctrls.slice(0, this.ctrls.length - 3);
+      } else {
+        this.ctrls.splice(iCtrl - 1, 3);
+      }
+      return true;
+    }
+    return false;
+  }
+  // Add a control to the stroke. 'iCtrl' is the reference control, if
+  // it's the first or last anchor extends the path from that control, else
+  // if it's an handle splits the path in the segment of that handle
+  AddCtrl(iCtrl) {
+    // If the control is the first one
+    if(iCtrl == 0) {
+      // Extends to the head in a straight line keeping the stroke smooth
+      let d = [
+        this.ctrls[0].pos[0] - this.ctrls[1].pos[0],
+        this.ctrls[0].pos[1] - this.ctrls[1].pos[1]];
+      let segment = [
+        {pos:[this.ctrls[0].pos[0] + d[0] * 1.5,this.ctrls[0].pos[1] + d[1] * 1.5], type:"anchor"},
+        {pos:[this.ctrls[0].pos[0] + d[0] * 1.0,this.ctrls[0].pos[1] + d[1] * 1.0], type:"handle"},
+        {pos:[this.ctrls[0].pos[0] + d[0] * 0.5,this.ctrls[0].pos[1] + d[1] * 0.5], type:"handle"},
+      ];
+      this.ctrls = segment.concat(this.ctrls);
+      return true;
+    // Else, if the control is the last one
+    } else if(iCtrl == this.ctrls.length - 1) {
+      // Extends to the tail in a straight line keeping the stroke smooth
+      let d = [
+        this.ctrls[iCtrl].pos[0] - this.ctrls[iCtrl - 1].pos[0],
+        this.ctrls[iCtrl].pos[1] - this.ctrls[iCtrl - 1].pos[1]];
+      let segment = [
+        {pos:[this.ctrls[iCtrl].pos[0] + d[0] * 0.5,this.ctrls[iCtrl].pos[1] + d[1] * 0.5], type:"handle"},
+        {pos:[this.ctrls[iCtrl].pos[0] + d[0] * 1.0,this.ctrls[iCtrl].pos[1] + d[1] * 1.0], type:"handle"},
+        {pos:[this.ctrls[iCtrl].pos[0] + d[0] * 1.5,this.ctrls[iCtrl].pos[1] + d[1] * 1.5], type:"anchor"},
+      ];
+      this.ctrls = this.ctrls.concat(segment);
+      return true;
+    // Else, if the control is a handle
+    } else if(this.ctrls[iCtrl].type == "handle") {
+      // Split the segment
+      let A = [];
+      let B = [];
+      let C = [];
+      let D = [];
+      if(this.ctrls[iCtrl + 1].type == "anchor") {
+        A = this.ctrls[iCtrl - 2].pos;
+        B = this.ctrls[iCtrl - 1].pos;
+        C = this.ctrls[iCtrl].pos;
+        D = this.ctrls[iCtrl + 1].pos;
+      } else {
+        A = this.ctrls[iCtrl - 1].pos;
+        B = this.ctrls[iCtrl].pos;
+        C = this.ctrls[iCtrl + 1].pos;
+        D = this.ctrls[iCtrl + 2].pos;
+      }
+      let E = [(A[0]+B[0])/2.0, (A[1]+B[1])/2.0];
+      let F = [(B[0]+C[0])/2.0, (B[1]+C[1])/2.0];
+      let G = [(C[0]+D[0])/2.0, (C[1]+D[1])/2.0];
+      let H = [(E[0]+F[0])/2.0, (E[1]+F[1])/2.0];
+      let I = [(F[0]+G[0])/2.0, (F[1]+G[1])/2.0];
+      let J = [(H[0]+I[0])/2.0, (H[1]+I[1])/2.0];
+      if(this.ctrls[iCtrl + 1].type == "anchor") {
+        this.ctrls[iCtrl - 1].pos = E;
+        this.ctrls[iCtrl].pos = G;
+        this.ctrls.splice(iCtrl, 0, {pos: H, type: "handle"});
+        this.ctrls.splice(iCtrl + 1, 0, {pos: J, type: "anchor"});
+        this.ctrls.splice(iCtrl + 2, 0, {pos: I, type: "handle"});
+      } else {
+        this.ctrls[iCtrl].pos = E;
+        this.ctrls[iCtrl + 1].pos = G;
+        this.ctrls.splice(iCtrl + 1, 0, {pos: H, type: "handle"});
+        this.ctrls.splice(iCtrl + 2, 0, {pos: J, type: "anchor"});
+        this.ctrls.splice(iCtrl + 3, 0, {pos: I, type: "handle"});
+      }
+      return true;
+    }
+    return false;
+  }
+}
+// Pair key-value of a KanjiElem
+class KanjiKeyValue {
+  constructor(elem, key, val, id) {
+    // Owner KanjiElem
+    this.elem = elem;
+    // Key
+    this.key = key;
+    // Value
+    this.val = val;
+    // Internal id
+    this.id = id;
+    // SVG path as a KanjiStroke
+    this.path = undefined;
+  }
+  // Convert the KanjiKeyValue into a DOM and add it to the childs of a DOM
+  // element
+  ConvertToDOM(parentDOM) {
+    // Internal id of the kanji element
+    let id = parentDOM.id.split("_")[1];
+    // Create the div for the pair
+    let divField = document.createElement("div");
+    divField.id = "divField_" + id + "_" + this.key;
+    divField.className = "divField";
+    parentDOM.appendChild(divField);
+    // Create the div for the key
+    let divKey = document.createElement("div");
+    divKey.id = "divKey_" + id + "_" + this.key;
+    divKey.className = "divKey";
+    divKey.innerHTML = this.key;
+    divField.appendChild(divKey);
+    // Add the 'onclick' event handler
+    divKey.addEventListener("click", (evt) => {
+      editor.SelectElem(evt.target.id.split("_")[1]);});
+    // Create the input for the value
+    let inpVal = document.createElement("input");
+    inpVal.id = "inpVal_" + id + "_" + this.key;
+    inpVal.className = "inpVal";
+    inpVal.type = "text";
+    inpVal.value = this.val;
+    // onchange event on value input for path
+    if(this.key == "d") {
+      inpVal.addEventListener("input", (evt) => {
+        editor.UpdateKanjiStrokeFromDOM(evt.target.id.split("_")[1]);});
+    // onchange event on value input for attributes
+    } else {
+      inpVal.addEventListener("input", (evt) => {
+        editor.UpdateAttributeFromDOM(
+          evt.target.id.split("_")[1], evt.target.id.split("_")[2]);
+        editor.DrawKanji();});
+    }
+    // Place holder
+    if(this.key == "kvg:position") {
+      inpVal.placeholder =
+        "(bottom, kamae, left, nyo, nyoc, right, tare, tarec, top)";
+    } else if(this.key == "kvg:radical") {
+      inpVal.placeholder = "(general, jis, nelson, tradit)";
+    } else if(this.key == "type") {
+      inpVal.placeholder = "(㇀,㇁,㇂,㇃,㇄,㇅,㇆,㇇,㇈,㇉,㇋,㇏,㇐,㇑,㇒,㇓,㇔,㇕,㇖,㇗,㇙,㇚,㇛,㇜,㇞,㇟,㇡,６,a,b,c,v)";
+    }
+    // Add the 'ondblclick' event handler
+    inpVal.addEventListener("dblclick", (evt) => {
+      editor.elem("inpVal_" + id + "_" + this.key).value =
+        editor.elem("inpVal_" + id + "_" + this.key).placeholder;
+    });
+    divField.appendChild(inpVal);
+  }
+  // Encode a pair key-value to SVG format
+  EncodeToKanjiVGData() {
+    // Ignore field with empty value
+    if(this.val.trim() == "") {
+      if(this.key == "id") return this.key + "=\" \"";
+      else if(this.key == "type") return this.key + "=\" \"";
+      else if(this.key == "d") return this.key + "=\" \"";
+      else if(this.key == "transform") return this.key + "=\"matrix(1 0 0 1 55 55)\"";
+      else return "";
+    } else {
+      return this.key + "=\"" + this.val + "\"";
+    }
+  }
+}
+// Kanji element, instantiate one component of a kanji (a 'g', 'path', or 'text' tag)
+class KanjiElem {
+  constructor(parent, id, tag) {
+    // Parent KanjiElem
+    this.parent = parent;
+    // Internal id
+    this.id = id;
+    // Tag ('g', 'path', or 'text')
+    this.tag = tag;
+    // Child KanjiElem
+    this.elems = [];
+    // Fields (pairs key-value in the tag as KanjiKeyValue)
+    this.fields = [];
+  }
+  // Convert the KanjiElem into a DOM and add it to the childs of a DOM element
+  ConvertToDOM(parentDOM) {
+    // Create a div for the element and add it to the parent
+    let div = document.createElement("div");
+    parentDOM.appendChild(div);
+    // Set the div id
+    div.id = "divElem_" + this.id;
+    // Set the css class according to the tag
+    if(this.tag == "g") div.className = "divGroup";
+    else if(this.tag == "path") div.className = "divPath";
+    else if(this.tag == "text") div.className = "divText";
+    else div.className = "divOther";
+    // Add the fields
+    this.fields.forEach((field) => {field.ConvertToDOM(div);});
+    // Add the childs
+    this.elems.forEach((child) => {child.ConvertToDOM(div);});
+  }
+  // Get a field from its key
+  GetFieldByKey(key) {
+    let res = undefined;
+    this.fields.forEach((field) => {
+      if(field.key == key) res = field;
+    });
+    return res;
+  }
+  // Draw the element on a context
+  Draw(ctx, selectedId, zoom, selected=false) {
+    // Update selection flag
+    let subselected = selected | (this.id == selectedId);
+    // Draw the stroke if any
+    let fieldPath = this.GetFieldByKey("d");
+    if(fieldPath) fieldPath.path.Draw(ctx, zoom, subselected);
+    // Draw the text if any
+    let fieldText = this.GetFieldByKey("text");
+    if(fieldText) {
+      let fieldTransform = this.GetFieldByKey("transform");
+      if(fieldTransform) {
+        let vals = fieldTransform.val.slice(0, -1).split(" ");
+        let x = parseFloat(vals[4]) * zoom[2] + zoom[0];
+        let y = parseFloat(vals[5]) * zoom[2] + zoom[1];
+        let fieldStyle = this.parent.GetFieldByKey("style");
+        if(fieldStyle) {
+          if(subselected) ctx.fillStyle = "red";
+          else ctx.fillStyle = "black";
+          let size = fieldStyle.val.split("font-size:")[1].split(";")[0];
+          ctx.font = (parseFloat(size) * zoom[2]) + "px serif";
+          ctx.fillText(fieldText.val, x, y);
+        }
+      }
+    }
+    // Draw the child elements
+    this.elems.forEach((child) => {
+      child.Draw(ctx, selectedId, zoom, subselected);});
+  }
+  // Draw a candidate control for selection
+  DrawCandidate(ctx, iCtrl, zoom) {
+    let fieldPath = this.GetFieldByKey("d");
+    if(fieldPath) {
+      ctx.strokeStyle = "blue";
+      ctx.beginPath();
+      let ctrl = fieldPath.path.ctrls[iCtrl];
+      ctx.arc(
+        ctrl.pos[0] * zoom[2] + zoom[0],
+        ctrl.pos[1] * zoom[2] + zoom[1],
+        5, 0, 2 * Math.PI);
+      ctx.stroke();
+    }
+  }
+  // Search the stroke with nearest control from a position
+  // Return the pair [element, distance]
+  SearchStrokeFromPos(pos, resSearch) {
+    // If the element is a path
+    let field = this.GetFieldByKey("d");
+    if(field) {
+      // Get the distance from the searched position to the path
+      let dist = field.path.GetMinDistFromCtrlToPos(pos);
+      // Update the result
+      if(dist < resSearch[1]) {
+        resSearch[0] = this;
+        resSearch[1] = dist;
+      }
+    }
+    // Else keep searching on child elements
+    this.elems.forEach((child) => {
+      child.SearchStrokeFromPos(pos, resSearch);});
+  }
+  // Apply translation vector to the element
+  Translate(u) {
+    // If the element is a path
+    if(this.tag == "path") {
+      // Translate the stroke
+      let field = this.GetFieldByKey("d");
+      field.path.Translate(u);
+      // Update the field value
+      field.val = field.path.Encode();
+      // Update the dom
+      document.getElementById("inpVal_" + this.id + "_d").value = field.val;
+    // If the element is a path
+    } else if(this.tag == "text") {
+      let fieldTransform = this.GetFieldByKey("transform");
+      if(fieldTransform) {
+        // Apply the translation
+        let vals = fieldTransform.val.slice(0, -1).split(" ");
+        let x = parseFloat(vals[4]) + u[0];
+        let y = parseFloat(vals[5]) + u[1];
+        fieldTransform.val = "matrix(1 0 0 1 " + x.toFixed(2) + " " + y.toFixed(2) + ")";
+        // Update the dom
+        document.getElementById("inpVal_" + this.id + "_transform").value = fieldTransform.val;
+      }
+    // Else, translate the child elements
+    } else this.elems.forEach((child) => {child.Translate(u);});
+  }
+  // Apply translation vector to a control of the element
+  TranslateCtrl(iCtrl, u) {
+    // If the element is a path
+    if(this.tag == "path") {
+      // Translate the stroke
+      let field = this.GetFieldByKey("d");
+      field.path.TranslateCtrl(iCtrl, u);
+      // Update the field value
+      field.val = field.path.Encode();
+      // Update the dom
+      document.getElementById("inpVal_" + this.id + "_d").value = field.val;
+    }
+  }
+  // Add a control to the path element. 'iCtrl' is the reference control, if
+  // it's the first or last anchor extends the path from that control, else
+  // if it's an handle splits the path in the segment of that handle
+  AddCtrl(iCtrl) {
+    // If the element is a path
+    if(this.tag == "path") {
+      // Get the stroke field
+      let field = this.GetFieldByKey("d");
+      // Add the segment
+      let flagAdded = field.path.AddCtrl(iCtrl);
+      if(flagAdded) {
+        // Update the field value
+        field.val = field.path.Encode();
+        // Update the dom
+        document.getElementById("inpVal_" + this.id + "_d").value = field.val;
+        // Back to edit mode
+        editor.SetToolMode("edit_ctrl");
+      }
+    }
+  }
+  // Remove a control from the path element.
+  RemoveCtrl(iCtrl) {
+    // If the element is a path
+    if(this.tag == "path") {
+      // Get the stroke field
+      let field = this.GetFieldByKey("d");
+      // Remove the control
+      let flagRemoved = field.path.RemoveCtrl(iCtrl);
+      // If the removal occured
+      if(flagRemoved) {
+        // Update the field value
+        field.val = field.path.Encode();
+        // Update the dom
+        document.getElementById("inpVal_" + this.id + "_d").value = field.val;
+        // Back to edit mode
+        editor.SetToolMode("edit_ctrl");
+      }
+    }
+  }
+  // Apply scaling vector to the element, relative to a center position
+  Scale(u, center) {
+    // If the element is a path
+    if(this.tag == "path") {
+      // Scale the stroke
+      let field = this.GetFieldByKey("d");
+      field.path.Scale(u, center);
+      // Update the field value
+      field.val = field.path.Encode();
+      // Update the dom
+      document.getElementById("inpVal_" + this.id + "_d").value = field.val;
+    // Else, translate the child elements
+    } else this.elems.forEach((child) => {child.Scale(u, center);});
+  }
+  // Get the center position of an element (average of the anchors of its
+  // path or childs' center
+  GetCenter() {
+    let center = [0.0, 0.0];
+    // If the element is a path
+    if(this.tag == "path") {
+      // Set the center to the center of teh path
+      let field = this.GetFieldByKey("d");
+      center = field.path.GetCenter();
+    // Else, get the average of the childs' center
+    } else {
+      let n = 0.0;
+      this.elems.forEach((child) => {
+        let childCenter = child.GetCenter();
+        center[0] += childCenter[0];
+        center[1] += childCenter[1];
+        n += 1.0;
+      });
+      center[0] /= n;
+      center[1] /= n;
+    }
+    return center;
+  }
+  // Search the nearest control from a position
+  // Return the triple [element, idxCtrl, distance]
+  SearchCtrlFromPos(pos, resSearch) {
+    // If the element is a path
+    let field = this.GetFieldByKey("d");
+    if(field) {
+      // Get the nearest ctrl from the searched position in the path
+      let ctrl = field.path.GetNearestCtrlToPos(pos);
+      // Update the result
+      if(ctrl[1] < resSearch[2]) {
+        resSearch[0] = this;
+        resSearch[1] = ctrl[0];
+        resSearch[2] = ctrl[1];
+      }
+    }
+    // Else keep searching on child elements
+    this.elems.forEach((child) => {
+      child.SearchCtrlFromPos(pos, resSearch);});
+  }
+  // Add a new field
+  AddField(key) {
+    // Try to get the attribute
+    let field = this.GetFieldByKey(key);
+    // If the attribute doesn't exist already
+    if(field == undefined) {
+      // Create the pair key/value for the attribute
+      field = new KanjiKeyValue(this, key, "", editor.kanji.elemIdx);
+      editor.kanji.elemIdx += 1;
+      // Add the pair to the element's field
+      this.fields.push(field);
+      // Update the DOM
+      let div = editor.elem("divElem_" + this.id);
+      field.ConvertToDOM(div);
+    } else {
+      editor.PushMsg(
+        "Attribute " + key + " already exists in the selected element");
+    }
+  }
+  // Automatically set the value of the 'id' attributes based on the kanji
+  // hexadecimal
+  UpdateIds(hexa, idxs) {
+    // Get the 'id' field
+    let field = this.GetFieldByKey('id');
+    // If the field exist
+    if(field) {
+      // Automatically generate the id, update the field and dom
+      if(field.val.startsWith("kvg:StrokeNumbers_")) {
+        field.val = "kvg:StrokeNumbers_" + hexa;
+        editor.elem("inpVal_" + this.id + "_" + field.key).value = field.val;
+      } else if(field.val.startsWith("kvg:StrokePaths_")) {
+        // Leave that one untouched as it is the reference
+      } else {
+        if(this.tag == "path") {
+          field.val = "kvg:" + hexa + "-s" + idxs[1];
+          editor.elem("inpVal_" + this.id + "_" + field.key).value = field.val;
+          idxs[1] += 1;
+        } else {
+          // Escape the first child of the first element which is considered
+          // to be the 
+          if(idxs[0] > 0) {
+            field.val = "kvg:" + hexa + "-g" + idxs[0];
+            editor.elem("inpVal_" + this.id + "_" + field.key).value = field.val;
+          } else {
+            field.val = "kvg:" + hexa;
+            editor.elem("inpVal_" + this.id + "_" + field.key).value = field.val;
+          }
+          idxs[0] += 1;
+        }
+      }
+    }
+    // Update the id of the child elements
+    this.elems.forEach((elem) => {elem.UpdateIds(hexa, idxs)});
+  }
+  // Add a child element of a given tag
+  AddChildElem(tag) {
+    if(tag == "g") {
+      // Can only add subgroup to group
+      if(this.tag == "g") {
+        // Create the KanjiElem for the group
+        let newGroup = new KanjiElem(this, editor.kanji.elemIdx, "g");
+        editor.kanji.elemIdx += 1;
+        // Add default fields
+        editor.kanji.DecodeFields(newGroup, " id=\"kvg:" + editor.kanji.hexa + "-g\">");
+        // Add the element to the childs
+        this.elems.push(newGroup);
+        // Update the DOM
+        let parentDOM = editor.elem("divElem_" + this.id);
+        newGroup.ConvertToDOM(parentDOM);
+      } else {
+        editor.PushMsg("Can't add " + tag + " to " + this.tag);
+      }
+    } else if(tag == "path") {
+      // Can only add path to group
+      if(this.tag == "g") {
+        // Create the KanjiElem for the path
+        let newPath = new KanjiElem(this, editor.kanji.elemIdx, "path");
+        editor.kanji.elemIdx += 1;
+        // Add default fields
+        editor.kanji.DecodeFields(newPath, " id=\"kvg:" + editor.kanji.hexa + "-s\" type=\"一\" d=\"M25,55c20,0,40,0,60,0\">");
+        // Add the element to the childs
+        this.elems.push(newPath);
+        // Update the DOM
+        let parentDOM = editor.elem("divElem_" + this.id);
+        newPath.ConvertToDOM(parentDOM);
+        // Redraw the kanji
+        editor.DrawKanji();
+      } else {
+        editor.PushMsg("Can't add " + tag + " to " + this.tag);
+      }
+    } else if(tag == "text") {
+      // Can only add text to group
+      if(this.tag == "g") {
+        // Create the KanjiElem for the text
+        let newText = new KanjiElem(this, editor.kanji.elemIdx, "text");
+        editor.kanji.elemIdx += 1;
+        // Add default fields
+        editor.kanji.DecodeFields(newText, " transform=\"matrix(1 0 0 1 55 55)\" text=\"1\"");
+        // Add the element to the childs
+        this.elems.push(newText);
+        // Update the DOM
+        let parentDOM = editor.elem("divElem_" + this.id);
+        newText.ConvertToDOM(parentDOM);
+        // Redraw the kanji
+        editor.DrawKanji();
+      } else {
+        editor.PushMsg("Can't add " + tag + " to " + this.tag);
+      }
+    }
+  }
+}
+// Kanji class, instantiate everything related to one kanji in KanjiVG format
+class Kanji {
+  constructor() {
+    // Hexadecimal value of the kanji (default to '00000' if unknown)
+    this.hexa = "000000";
+    // Prefix (everything before the <svg> tag)
+    this.prefix = ""
+    // Header (the svg tag)
+    this.header = "";
+    // Elements of the kanji
+    this.elems = [];
+    // Tail (svg closing tag)
+    this.tail = "";
+    // Value for attribution of elements internal id
+    this.elemIdx = 0; 
+  }
+  // Decode the raw data (in KanjiVG file format)
+  DecodeFromKanjiVGData(rawData) {
+    // Decode the prefix (xml version, copyright, doctype, attlist)
+    let svgStart = "<svg";
+    var parts = rawData.split(svgStart);
+    this.prefix = parts[0];
+    // Decode the header (svg start tag)
+    this.header = svgStart + parts[1].split("\n")[0];
+    // Decode the groups structure (g tags)
+    let svgEnd = "</svg";
+    var parts = parts[1].split(svgEnd);
+    this.elemIdx = 0;
+    this.elems = this.DecodeElems(parts[0].split("\n").slice(1));
+    // Decode the tail (svg end tag)
+    this.tail = svgEnd + parts[1];
+  }
+  // Decode the elements in the kanji from the KanjiVG data
+  // 'rawData': array of lines of raw data (lines within the <svg> tag)
+  DecodeElems(rawData, initParentElem=undefined) {
+    // Result array of KanjiElem
+    let elems = [];
+    // Stack to manage the hierarchy of elements
+    let hierarchy = [];
+    // Eventually set an initial parent in the hierarchy (used for copy/paste)
+    if(initParentElem) hierarchy.push(initParentElem);
+    // Loop until we have exhausted the raw data
+    while(rawData.length > 0) {
+      // Get the next line in the raw data
+      let rawLine = rawData.shift().trim();
+      // If the line is the beginning of a new group
+      if(rawLine.startsWith("<g")) {
+        // Get the parent of the element
+        let parent = undefined;
+        if(hierarchy.length > 0) parent = hierarchy[hierarchy.length - 1];
+        // Create the KanjiElem for the group
+        let newGroup = new KanjiElem(parent, this.elemIdx, "g");
+        this.elemIdx += 1;
+        // Decode the fields
+        this.DecodeFields(newGroup, rawLine.split("<g")[1]);
+        // Push the group on the hierarchy
+        hierarchy.push(newGroup);
+      // Else, if the element is the end of a group
+      } else if(rawLine.startsWith("</g")) {
+        // If the current group is at the top level of the hierarchy
+        if(hierarchy.length == 1) {
+          // Move the completed group from the hierarchy to the result
+          elems.push(hierarchy.pop());
+        // Else the current group is a subgroup
+        } else {
+          // Move the completed group from the hierarchy to its parent group
+          let subgroup = hierarchy.pop();
+          hierarchy[hierarchy.length - 1].elems.push(subgroup);
+        }
+      // If the line is a path
+      } else if(rawLine.startsWith("<path")) {
+        // Create the KanjiElem for the path
+        let newElem = new KanjiElem(
+          hierarchy[hierarchy.length - 1], this.elemIdx, "path");
+        this.elemIdx += 1;
+        // Decode the fields
+        this.DecodeFields(newElem, rawLine.split("<path")[1]);
+        // Add the path to the childs of the current group
+        newElem.parent.elems.push(newElem);
+      // If the line is a text
+      } else if(rawLine.startsWith("<text")) {
+        // Create the KanjiElem for the text
+        let newElem = new KanjiElem(
+          hierarchy[hierarchy.length - 1], this.elemIdx, "text");
+        this.elemIdx += 1;
+        // Decode the fields
+        this.DecodeFields(newElem, rawLine.split("<text")[1].split('>')[0]);
+        // Memorize the text value as an extra field
+        newElem.fields.push(new KanjiKeyValue(
+          this, "text", rawLine.split(">")[1].split("<")[0], this.elemIdx));
+        this.elemIdx += 1;
+        // Add the text to the childs of the current group
+        newElem.parent.elems.push(newElem);
+      // Else, if the line is not empty
+      } else if(rawLine != ""){
+        // Unknown tag, raise an error
+        console.log(rawLine);
+        throw "error while decoding";
+      }
+    }
+    // If the hierarchy is not empty here, there has been a problem
+    if(
+      (initParentElem == undefined && hierarchy.length != 0) ||
+      (initParentElem != undefined && hierarchy.length != 1)
+    ) {
+      console.log(hierarchy);
+      throw "error while parsing";
+    }
+    // Return the decoded elements
+    return elems;
+  }
+  // Decode the fields of an element from a raw line
+  DecodeFields(elem, rawLine) {
+    // Reset the fields of the element
+    elem.fields = [];
+    // Split the kvg fields into key:value
+    let parts = rawLine.match(/ .*?=".*?"/g);
+    parts.forEach((part) => {
+      let keyVal = part.split("=");
+      // If the value is "kvg:StrokePaths_xxx", set the kanji hexadecimal
+      // value
+      if(keyVal[1].startsWith("\"kvg:StrokePaths_")) {
+        this.hexa = keyVal[1].split("\"kvg:StrokePaths_")[1].slice(0, -1);
+      }
+      // Create the field
+      // slice(1,-1) on the value to remove double quotes
+      let field = new KanjiKeyValue(elem, keyVal[0].slice(1), keyVal[1].slice(1,-1), this.elemIdx);
+      this.elemIdx += 1;
+      // If the field is a path, decode the SVG data
+      if(field.key == "d") field.path = this.DecodeSvgPath(field.val);
+      // Add the decoded field to the element
+      elem.fields.push(field);
+    });
+  }
+  // Decode a svg path string
+  DecodeSvgPath(str) {
+    let path = new KanjiStroke();
+    // Variable to memorise the current position
+    let pos = [0.0, 0.0];
+    // Parse the path definition into its parts (cmd+values)
+    let parts = str.replaceAll(",", " ").match(/[MmCcSs][0-9\. -]*/g);
+    // Loop on the parts
+    parts.forEach((part) => {
+      // Split the command components
+      let comps = (part[0] + ' ' + part.slice(1)).replaceAll("-"," -").split(' ').filter(n => n);
+      // Extract command and values
+      let cmd = comps.shift();
+      let vals = comps.map((e) => parseFloat(e));
+      // If the command is an absolute move
+      if(cmd == 'M') {
+        // Update the current position
+        [0, 1].forEach((i) => {pos[i] = vals[i];});
+        // Add the anchor
+        let ctrl = {};
+        ctrl.pos = [pos[0], pos[1]];
+        ctrl.type = "anchor";
+        path.ctrls.push(ctrl);
+      // If the command is a relative move
+      } else if(cmd == 'm') {
+        // Update the current position
+        [0, 1].forEach((i) => {pos[i] += vals[i];});
+        // Add the anchor
+        let ctrl = {};
+        ctrl.pos = [pos[0], pos[1]];
+        ctrl.type = "anchor";
+        path.ctrls.push(ctrl);
+      // If the command is an absolute control
+      } else if(cmd == 'C') {
+        // Loop on the segments
+        for(var s = 0; s < vals.length/6; s += 1) {
+          const i = s * 6;
+          // Add the first handle
+          let ctrl = {};
+          ctrl.pos = [vals[0+i], vals[1+i]];
+          ctrl.type = "handle";
+          path.ctrls.push(ctrl);
+          // Add the second handle
+          ctrl = {};
+          ctrl.pos = [vals[2+i], vals[3+i]];
+          ctrl.type = "handle";
+          path.ctrls.push(ctrl);
+          // Add the next anchor
+          ctrl = {};
+          ctrl.pos = [vals[4+i], vals[5+i]];
+          ctrl.type = "anchor";
+          path.ctrls.push(ctrl);
+          // Update the current position
+          [0, 1].forEach((j) => {pos[j] = vals[4+i+j];});
+        }
+      // If the command is a relative control
+      } else if(cmd == 'c') {
+        // Loop on the segments
+        for(var s = 0; s < vals.length/6; s += 1) {
+          const i = s * 6;
+          // Add the first handle
+          let ctrl = {};
+          ctrl.pos = [pos[0] + vals[0+i], pos[1] + vals[1+i]];
+          ctrl.type = "handle";
+          path.ctrls.push(ctrl);
+          // Add the second handle
+          ctrl = {};
+          ctrl.pos = [pos[0] + vals[2+i], pos[1] + vals[3+i]];
+          ctrl.type = "handle";
+          path.ctrls.push(ctrl);
+          // Add the next anchor
+          ctrl = {};
+          ctrl.pos = [pos[0] + vals[4+i], pos[1] + vals[5+i]];
+          ctrl.type = "anchor";
+          path.ctrls.push(ctrl);
+          // Update the current position
+          [0, 1].forEach((j) => {pos[j] += vals[4+i+j];});
+        }
+      // If the command is an absolute smooth control
+      } else if(cmd == 'S') {
+        // Loop on the segments
+        for(var s = 0; s < vals.length/4; s += 1) {
+          const i = s * 6;
+          // Add the first handle
+          let ctrl = {};
+          let l = path.ctrls.length;
+          ctrl.pos = [
+            2.0 * path.ctrls[l-1].pos[0] - path.ctrls[l-2].pos[0],
+            2.0 * path.ctrls[l-1].pos[1] - path.ctrls[l-2].pos[1]];
+          ctrl.type = "handle";
+          path.ctrls.push(ctrl);
+          // Add the second handle
+          ctrl = {};
+          ctrl.pos = [vals[0+i], vals[1+i]];
+          ctrl.type = "handle";
+          path.ctrls.push(ctrl);
+          // Add the next anchor
+          ctrl = {};
+          ctrl.pos = [vals[2+i], vals[3+i]];
+          ctrl.type = "anchor";
+          path.ctrls.push(ctrl);
+          // Update the current position
+          [0, 1].forEach((j) => {pos[j] = vals[4+i+j];});
+        }
+      // If the command is a relative smooth control
+      } else if(cmd == 's') {
+        // Loop on the segments
+        for(var s = 0; s < vals.length/4; s += 1) {
+          const i = s * 6;
+          // Add the first handle
+          let ctrl = {};
+          let l = path.ctrls.length;
+          ctrl.pos = [
+            2.0 * path.ctrls[l-1].pos[0] - path.ctrls[l-2].pos[0],
+            2.0 * path.ctrls[l-1].pos[1] - path.ctrls[l-2].pos[1]];
+          ctrl.type = "handle";
+          path.ctrls.push(ctrl);
+          // Add the second handle
+          ctrl = {};
+          ctrl.pos = [pos[0] + vals[2+i], pos[1] + vals[3+i]];
+          ctrl.type = "handle";
+          path.ctrls.push(ctrl);
+          // Add the next anchor
+          ctrl = {};
+          ctrl.pos = [pos[0] + vals[4+i], pos[1] + vals[5+i]];
+          ctrl.type = "anchor";
+          path.ctrls.push(ctrl);
+          // Update the current position
+          [0, 1].forEach((j) => {pos[j] += vals[4+i+j];});
+        }
+      }
+    });
+    return path;
+  }
+  // Convert the Kanji into a DOM and add it to the childs of a DOM element
+  ConvertToDOM(parentDOM) {
+    // Loop on the elements
+    this.elems.forEach((elem) => {
+      // Convert the element
+      elem.ConvertToDOM(parentDOM);
+    });
+  }
+  // Encode the kanji to KanjiVGData
+  EncodeToKanjiVGData() {
+    // Prefix
+    let rawData = this.prefix;
+    // Header
+    rawData += this.header + "\n";
+    // Start the encoding recursion of the elements
+    rawData += this.EncodeToKanjiVGDataRec(this.elems, 0);
+    // Tail
+    rawData += this.tail;
+    return rawData;
+  }
+  // Recursion to encode the kanji to KanjiVGData
+  EncodeToKanjiVGDataRec(elems, depth) {
+    // Indent constant (tab? spaces?)
+    let indent = "\t";
+    // Variable to memorise the encoded data
+    let rawData = "";
+    // Loop on elements
+    elems.forEach((elem) => {
+      // If the element is a group
+      if(elem.tag == "g") {
+        // Block head start
+        rawData += indent.repeat(depth) + "<g";
+        // Fields
+        if(elem.fields) elem.fields.forEach((field) => {
+          let keyVal = field.EncodeToKanjiVGData();
+          if(keyVal != "") rawData += " " + keyVal;
+        });
+        // Block head end
+        rawData += ">\n";
+        // sub elements
+        if(elem.elems) {
+          rawData += this.EncodeToKanjiVGDataRec(elem.elems, depth + 1);
+        }
+        // Block end
+        rawData += indent.repeat(depth) + "</g>\n";
+      // Else, if the element is a path
+      } else if(elem.tag == "path") {
+        // Path start
+        rawData += indent.repeat(depth+1) + "<path";
+        // Fields
+        if(elem.fields) elem.fields.forEach((field) => {
+          let keyVal = field.EncodeToKanjiVGData();
+          if(keyVal != "") rawData += " " + keyVal;
+        });
+        // Path end
+        rawData += "/>\n";
+      // Else, if the element is a path
+      } else if(elem.tag == "text") {
+        // Text start
+        rawData += indent.repeat(depth+1) + "<text";
+        // Fields
+        if(elem.fields) elem.fields.forEach((field) => {
+          if(field.key != "text") rawData += " " + field.EncodeToKanjiVGData();
+        });
+        // Text end
+        let field = elem.GetFieldByKey("text");
+        rawData += ">" + field.val + "</text>\n";
+      }
+    });
+    // Return the encoded data
+    return rawData;
+  }
+  // Search an element in the kanji by its internal id. Return a KanjiElem
+  GetElementById(id) {
+    // Start the recursion
+    return this.GetElementByIdRec(this.elems, id);
+  }
+  // Recursion to search an element in the kanji by its internal id
+  GetElementByIdRec(elems, id) {
+    let res = undefined;
+    // Loop on the elements
+    elems.forEach((elem) => {
+      // If the element matches, return it
+      if(elem.id == id) res = elem;
+      // If the id doesn't match, keep searching in the element childs
+      else {
+        let subRes = this.GetElementByIdRec(elem.elems, id);
+        if(subRes != undefined) res = subRes;
+      }
+    });
+    // If we reach here, the id couldn't be found
+    return res;
+  }
+  // Draw the Kanji on a context
+  Draw(ctx, selectedId, zoom) {
+    // Draw each element of the kanji
+    this.elems.forEach((elem) => {elem.Draw(ctx, selectedId, zoom);});
+  }
+  // Search the stroke with nearest control from a position
+  // Return the element internal id
+  SearchStrokeFromPos(pos) {
+    let resSearch = [undefined, 1000.0];
+    this.elems.forEach((elem) => {elem.SearchStrokeFromPos(pos, resSearch)});
+    if(resSearch[0]) return resSearch[0].id;
+    else return -1;
+  }
+  // Delete an element in the kanji. 'id' is the internal id
+  DeleteElem(id) {
+    // Get the element
+    let elem = this.GetElementById(id);
+    // Get the parent of the element
+    let parent = elem.parent;
+    if(parent == undefined) parent = this;
+    // Get the element idx in its parent child
+    let idx = parent.elems.findIndex((e) => e.id == id);
+    // Remove the element from its parent's child
+    parent.elems.splice(idx, 1);
+  }
+  // Automatically set the value of the 'id' attributes based on the kanji
+  // hexadecimal
+  UpdateIds() {
+    // Indexes for groups and paths
+    let idxs = [0, 1];
+    // Update the id of the kanji elements
+    this.elems.forEach((elem) => {elem.UpdateIds(this.hexa, idxs)});
+  }
+}
+// KanjiVGEditor class
+class KanjiVGEditor {
+  constructor() {
+    this.version = "beta.000";
+    // Push a welcome message in the message div
+    this.PushMsg("Welcome to KanjiVGEditor");
+    this.elem("spanVersion").innerHTML = this.version;
+    // Internal id of the currently selected KanjiElem
+    this.selectedId = -1;
+    // Background image
+    this.bgImage = undefined;
+    // Setup handlers for mouse events on canvas
+    this.elem("canKanji").addEventListener('click', (evt) => {editor.CanvasClick(evt)});
+    this.elem("canKanji").addEventListener('mousedown', (evt) => {editor.CanvasDown(evt)});
+    this.elem("canKanji").addEventListener('mousemove', (evt) => {editor.CanvasMove(evt)});
+    this.elem("canKanji").addEventListener('mouseup', (evt) => {editor.CanvasUp(evt)});
+    // Reset the canvas
+    // The size needs to be set programmatically because css values are not
+    // honoured properly
+    // TODO: use the dimensions in svg data ?
+    let scaleCanvas = 5.0;
+    let canvas = this.elem("canKanji");
+    canvas.width = 109.0 * scaleCanvas;
+    canvas.height = 109.0 * scaleCanvas;
+    this.ClearKanji();
+    // Zoom parameters [translateX, translateY, scale]
+    this.zoom = [0.0, 0.0, scaleCanvas];
+    // Set the initial tool mode
+    this.SetToolMode("off");
+    // Flag to memorise the mouse down status
+    this.flagMouseDown = false;
+    // Position of the last mouse down (uncorrected for zoom)
+    this.posLastMouseDown = [0.0, 0.0];
+    // Currently selected control ([element, idxCtrl, distance])
+    this.selectedCtrl = [undefined, 0, 1000.0];
+    // History stack
+    this.history = [];
+  }
+  // Helper function to get an element by its id
+  elem(id) { return document.getElementById(id); }
+  // Undo
+  Undo() {
+    if(this.history.length > 0) {
+      let past = this.history.pop();
+      this.kanji = past.kanji;
+      this.zoom = past.zoom;
+      this.selectedId = past.selectedId;
+      this.bgImage = past.bgImage;
+      this.SetToolMode(past.toolMode);
+      this.UpdateDOM()
+      this.DrawKanji();
+    }
+  }
+  // Memorise the current state in history for later undo
+  Memorise() {
+    let past = {
+      kanji: new Kanji(),
+      zoom: [this.zoom[0], this.zoom[1], this.zoom[2]],
+      selectedId: this.selectedId,
+      toolMode: this.toolMode,
+      bgImage: this.bgImage};
+    let rawData = this.kanji.EncodeToKanjiVGData();
+    past.kanji.DecodeFromKanjiVGData(rawData);
+    this.history.push(past);
+  };
+  // Method to create and add a new element
+  AddElem(parent, type, properties) {
+    let elem = document.createElement(type);
+    for (const [prop, val] of Object.entries(properties)) elem[prop] = val;
+    parent.appendChild(elem);
+    return elem;
+  }
+  // Get current time
+  GetCurrentTime() {
+    const now = new Date();
+    return String(now.getHours()).padStart(2, '0') + ":" +
+      String(now.getMinutes()).padStart(2, '0') + ":" +
+      String(now.getSeconds()).padStart(2, '0');
+  }
+  // Add a message to inform the user
+  PushMsg(msg) {
+    // Keep only the 3 most recent messages
+    while(this.elem('divMsg').childElementCount >= 3)
+      this.elem('divMsg').removeChild(this.elem('divMsg').firstElementChild);
+    // Add the message
+    const now = new Date();
+    this.AddElem(this.elem('divMsg'), 'div',
+      {'innerHTML':this.GetCurrentTime() + " " + msg});
+  }
+  // Update the DOM with the kanji data
+  UpdateDOM() {
+    // Delete divKanji content
+    while (this.elem("divKanji").firstChild) {
+      this.elem("divKanji").removeChild(this.elem("divKanji").lastChild);
+    }
+    // Convert the Kanji into a DOM and add it to divKanji
+    this.kanji.ConvertToDOM(this.elem("divKanji"));
+  }
+  // Handler for the update a stroke after its value has been edited in the dom
+  // 'id' is the internal id of the edited KanjiElem
+  UpdateKanjiStrokeFromDOM(id) {
+    // Get the edited KanjiElem
+    let elem = this.kanji.GetElementById(id);
+    // Get the KanjiKeyValue for the path data in the edited KanjiElem
+    let field = elem.GetFieldByKey("d");
+    // Update the KanjiKeyValue with the edited data
+    field.val = this.elem("inpVal_" + id + "_d").value;
+    // Update the KanjiStroke with the edited data
+    field.path = this.kanji.DecodeSvgPath(field.val);
+    // Redraw the Kanji on the canvas
+    this.DrawKanji();
+  }
+  // Handler for the update an attrobute after its value has been edited in
+  // the dom 'id' is the internal id of the edited KanjiElem
+  UpdateAttributeFromDOM(id, key) {
+    // Get the edited KanjiElem
+    let elem = this.kanji.GetElementById(id);
+    // Get the KanjiKeyValue for the path data in the edited KanjiElem
+    let field = elem.GetFieldByKey(key);
+    // Update the KanjiKeyValue with the edited data
+    field.val = this.elem("inpVal_" + id + "_" + key).value;
+    // If the value is "kvg:StrokePaths_xxx", update the kanji
+    // hexadecimal value
+    if(field.val.startsWith("kvg:StrokePaths_")) {
+      this.kanji.hexa = field.val.split("kvg:StrokePaths_")[1];
+    }
+  }
+  // Handler for the selection of an element in the structure
+  // 'id' is the internal id of the element
+  SelectElem(id) {
+    if(id == this.selectedId) {
+      this.elem("divElem_" + this.selectedId).style.borderWidth = "1px";
+      this.selectedId = -1;
+    } else {
+      if(this.selectedId != -1) this.elem("divElem_" + this.selectedId).style.borderWidth = "1px";
+      this.selectedId = id;
+      this.elem("divElem_" + this.selectedId).style.borderWidth = "3px";
+    }
+    // Redraw the kanji
+    this.DrawKanji()
+  }
+  // Handler for 'load' button (load raw data from svg file to textarea)
+  BtnLoadClick() {
+    try {
+      // Select the file
+      let inp = document.createElement('input');
+      inp.type = 'file';
+      inp.onchange = e => {
+        // Load the file content and update the raw data
+        let file = e.target.files[0];
+        let reader = new FileReader();
+        reader.readAsText(file,'UTF-8');
+        reader.onload = (evt) => {
+          this.elem("txtRawData").value = evt.target.result;
+        };
+      }
+      inp.click();
+    } catch(err) {
+      console.log(err);
+      this.PushMsg("Failed to load the file.");
+      return;
+    }
+  }
+  // Load a background image selected by the user
+  LoadBgImage() {
+    try {
+      // Select the file
+      let inp = document.createElement('input');
+      inp.type = 'file';
+      inp.onchange = e => {
+        this.bgImage = new window.Image();
+        var fileReader = new FileReader();
+        fileReader.onloadend = (evt) => {
+          editor.bgImage.setAttribute("src", evt.target.result);
+          editor.DrawKanji();
+        };
+        fileReader.readAsDataURL(e.target.files[0]); 
+      }
+      inp.click();
+    } catch(err) {
+      console.log(err);
+      this.PushMsg("Failed to load the image.");
+      return;
+    }
+  }
+  // Handler for 'save' button (save raw data from text area to svg file)
+  BtnSaveClick() {
+    try {
+      var data = new Blob([this.elem("txtRawData").value], {type: 'text/plain'});
+      let a = document.createElement('a');
+      a.href = window.URL.createObjectURL(data);
+      // TODO: can't force the selection of the output folder but could at
+      // least try to create the correct filename based on the kanji's id
+      a.download = this.kanji.hexa + ".svg";
+      a.click();
+    } catch(err) {
+      console.log(err);
+      this.PushMsg("Failed to save the file.");
+      return;
+    }
+  }
+  // Handler for 'decode' button (convert raw data to dictionary and switch
+  // from raw tile to structure tile)
+  BtnDecodeClick() {
+    // Decode the raw data
+    try {
+      let kanji = new Kanji();
+      kanji.DecodeFromKanjiVGData(this.elem("txtRawData").value);
+      this.kanji = kanji;
+    } catch(err) {
+      console.log(err);
+      this.PushMsg("Failed to decode the raw data.");
+      return;
+    }
+    // Reset the selected element
+    this.selectedId = -1;
+    // Reset the tool mode
+    this.SetToolMode("select");
+    // Update the DOM with the kanji data
+    this.UpdateDOM();
+    // Hide the raw data and show the structure instead
+    this.elem("divRaw").style.display = "none";
+    this.elem("divStructure").style.display = "inline-block";
+    // Draw the kanji on the canvas
+    this.DrawKanji();
+  }
+  // Handler for 'encode' button
+  BtnEncodeClick() {
+    // Encode the dictionary data
+    try {
+      let rawData = this.kanji.EncodeToKanjiVGData();
+      this.elem("txtRawData").value = rawData;
+    } catch(err) {
+      console.log(err);
+      this.PushMsg("Failed to encode the structure.");
+      return;
+    }
+    // Hide the structure and show the raw data instead
+    this.elem("divRaw").style.display = "inline-block";
+    this.elem("divStructure").style.display = "none";
+    // Turn off the toolbox
+    this.SetToolMode("off");
+    // Turn off selection
+    this.selectedId = -1;
+    this.DrawKanji();
+  }
+  // Update the kanji with the data in the DOM
+  UpdateKanji() {
+    // Start the recursion
+    this.UpdateKanjiRec(this.kanji.groups);
+  }
+  // Recursion for the update the kanji with the data in the DOM
+  UpdateKanjiRec(elems) {
+    // Loop on the elements
+    elems.forEach((elem) => {
+      // If the element is a group
+      if(elem.tag == "g") {
+        // Update the fields
+        if(elem.fields) elem.fields.forEach((field) => {
+          field.value = this.elem("inpKanjiVal" + field.domIdx).value;
+        });
+        // Update the properties of the element
+        if(elem.properties) this.UpdateKanjiRec(elem.properties);
+        // Update the element with its own subgroups if any
+        if(elem.groups) this.UpdateKanjiRec(elem.groups);
+      // Else, if the element is a path
+      } else if(elem.tag == "path") {
+        // Update the fields
+        if(elem.fields) elem.fields.forEach((field) => {
+          field.value = this.elem("inpKanjiVal" + field.domIdx).value;
+        });
+      // Else, the element is nor a group nor a path
+      } else  {
+        // Update the 'raw' value
+        elem.raw = this.elem("inpKanjiVal" + elem.domIdx).value;
+      }
+    });
+  }
+  // Clear the kanvas
+  ClearKanji() {
+    // Get the canvas context for drawing
+    let canvas = this.elem("canKanji");
+    let ctx = canvas.getContext("2d");
+    // Reset the canvas
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+  // Update the kanji on the canvas
+  DrawKanji() {
+    // Reset the canvas
+    this.ClearKanji();
+    // Get the drawing context
+    const canvas = this.elem("canKanji");
+    const ctx = canvas.getContext("2d");
+    // If there is a background image, draw it
+    if(this.bgImage) {
+      ctx.drawImage(this.bgImage,
+        0, 0, this.bgImage.width, this.bgImage.height,
+        this.zoom[0], this.zoom[1], this.zoom[2] * this.bgImage.width, this.zoom[2] * this.bgImage.height);
+    }
+    // Draw the kanji
+    try {
+      this.kanji.Draw(ctx, this.selectedId, this.zoom);
+    } catch(err) {
+      console.log(err);
+      this.PushMsg("Failed to draw the kanji.");
+    }
+  }
+  // Get the mouse position relative to a DOM element
+  GetMousePos(evt, element) {
+    let rect = element.getBoundingClientRect();
+    return [evt.clientX - rect.left, evt.clientY - rect.top];
+  }
+  // Get the mouse position corrected for the zoom
+  GetMousePosZoom(evt, element) {
+    let clickedPos = this.GetMousePos(evt, element);
+    let pos = [
+      (clickedPos[0] - this.zoom[0]) / this.zoom[2],
+      (clickedPos[1] - this.zoom[1]) / this.zoom[2]];
+    return pos;
+  }
+  // Handler for click on canvas
+  CanvasClick(evt) {
+    // Get the clicked position
+    let pos = this.GetMousePosZoom(evt, this.elem("canKanji"))
+    // If we are in selection mode
+    if(this.toolMode == "select") {
+      // Select the stroke with nearest control from the clicked position
+      let id = this.kanji.SearchStrokeFromPos(pos);
+      if(id != -1) this.SelectElem(id);
+    }
+  }
+  // Handler for mousedown on canvas
+  CanvasDown(evt) {
+    this.flagMouseDown = true;
+    this.posLastMouseDown = this.GetMousePos(evt, this.elem("canKanji"));
+    // If the tool mode is 'edit_ctrl', 'add_ctrl' or 'remove_ctrl'
+    if(
+      this.toolMode == "edit_ctrl" ||
+      this.toolMode == "add_ctrl" ||
+      this.toolMode == "remove_ctrl"
+    ) {
+      // Get the selected element
+      let elem = this.kanji.GetElementById(this.selectedId);
+      // Get the position in Kanji space
+      let pos = [
+        (this.posLastMouseDown[0] - this.zoom[0]) / this.zoom[2],
+        (this.posLastMouseDown[1] - this.zoom[1]) / this.zoom[2]];
+      // Search the control in the selected element
+      elem.SearchCtrlFromPos(pos, this.selectedCtrl);
+    }
+  }
+  // Handler for mousemove on canvas
+  CanvasMove(evt) {
+    // Get the current pos
+    let pos = this.GetMousePos(evt, this.elem("canKanji"));
+    // If the mouse is 'down'
+    if(this.flagMouseDown) {
+      // If the tool mode is 'move'
+      if(this.toolMode == "move") {
+        // Apply translation to the zoom parameters
+        this.zoom[0] += pos[0] - this.posLastMouseDown[0];
+        this.zoom[1] += pos[1] - this.posLastMouseDown[1];
+        // Update the last down position
+        this.posLastMouseDown[0] = pos[0];
+        this.posLastMouseDown[1] = pos[1];
+        // Redraw the kanji
+        this.DrawKanji();
+      // Else, if there is a selected element
+      } else if(this.selectedId != -1) {
+        // Get the translation in kanji coordinate
+        let u = [
+          (pos[0] - this.posLastMouseDown[0]) / this.zoom[2],
+          (pos[1] - this.posLastMouseDown[1]) / this.zoom[2]];
+        // Get the selected element
+        let elem = this.kanji.GetElementById(this.selectedId);
+        // If the tool mode is 'translate'
+        if(this.toolMode == "translate") {
+          // Apply the translation to the selected element
+          elem.Translate(u);
+        // Else, if the tool mode is 'scale'
+        } else if(this.toolMode == "scale") {
+          // Convert the translation to a scaling vector
+          // TODO: use svg data instead of a constant 109
+          u[0] = u[0] / 109.0 + 1.0;
+          u[1] = -u[1] / 109.0 + 1.0;
+          // Apply the scaling to the selected element
+          elem.Scale(u, elem.GetCenter());
+        // Else, if the tool mode is 'edit'
+        } else if(this.toolMode == "edit_ctrl") {
+          // If there is a selected control
+          if(this.selectedCtrl[0]) {
+            // Apply the translation to the selected control
+            this.selectedCtrl[0].TranslateCtrl(this.selectedCtrl[1], u);
+          }
+        }
+        // Update the last down position
+        this.posLastMouseDown[0] = pos[0];
+        this.posLastMouseDown[1] = pos[1];
+        // Redraw the kanji
+        this.DrawKanji();
+      } else {
+        this.PushMsg("No element selected");
+        this.SetToolMode("select");
+      }
+    // Else, the mouse is not 'down'
+    } else {
+      // If there is a selected element
+      if(this.selectedId != -1) {
+        // Get the current mouse pos
+        let pos = this.GetMousePos(evt, this.elem("canKanji"));
+        // Get the selected element
+        let elem = this.kanji.GetElementById(this.selectedId);
+        // If the selected elemnt is a path
+        if(elem.tag == "path") {
+          // Get the position in Kanji space
+          let posKanji = [
+            (pos[0] - this.zoom[0]) / this.zoom[2],
+            (pos[1] - this.zoom[1]) / this.zoom[2]];
+          // Search the control in the selected element
+          let selectedCtrl = [undefined, 0, 1000.0];
+          elem.SearchCtrlFromPos(posKanji, selectedCtrl);
+          // Draw the kanji
+          this.DrawKanji()
+          // Draw the candidate selected control
+          const canvas = this.elem("canKanji");
+          const ctx = canvas.getContext("2d");
+          selectedCtrl[0].DrawCandidate(ctx, selectedCtrl[1], this.zoom);
+        }
+      }
+    }
+  }
+  // Handler for mouseup on canvas
+  CanvasUp(evt) {
+    this.Memorise();
+    // If we are in add_ctrl mode
+    if(this.toolMode == "add_ctrl") {
+      // If there is a selected control
+      if(this.selectedCtrl[0]) {
+        // Add a control relative to the selected control
+        this.selectedCtrl[0].AddCtrl(this.selectedCtrl[1]);
+        // Redraw the kanji
+        this.DrawKanji();
+      }
+    // Else, if we are in remove_ctrl mode
+    } else if(this.toolMode == "remove_ctrl") {
+      // If there is a selected control
+      if(this.selectedCtrl[0]) {
+        // Remove the selected control
+        this.selectedCtrl[0].RemoveCtrl(this.selectedCtrl[1]);
+        // Redraw the kanji
+        this.DrawKanji();
+      }
+    }
+    this.flagMouseDown = false;
+    this.selectedCtrl = [undefined, 0, 1000.0];
+  }
+  // Helper function for SetToolMode
+  SetToolModeHelper(ins, outs, tgt) {
+    let colorOn = "#fbab00";
+    let colorOff = "#fecb5e";
+    ins.forEach((btn) => {
+      this.elem("btn" + btn).style.display = "inline-block";
+      this.elem("btn" + btn).style.background = colorOff;
+    });
+    outs.forEach((btn) => {
+      this.elem("btn" + btn).style.display = "none";
+    });
+    if(tgt != "") this.elem(tgt).style.background = colorOn;
+  }
+  // Set the tool mode
+  SetToolMode(mode) {
+    // Set the current mode
+    this.toolMode = mode;
+    // Update the DOM's tool box according to the current tool mode
+    if(this.toolMode == "off") {
+      this.SetToolModeHelper(
+        [],
+        ["Select", "View", "Transform", "Draw", "CloseTool", "Translate", "Scale", "EditCtrl", "AddCtrl", "RemoveCtrl", "Move", "ZoomIn", "ZoomOut", "ResetView", "Background"],
+        "");
+    } else if(this.toolMode == "select") {
+      this.SetToolModeHelper(
+        ["Select", "View", "Transform", "Draw"],
+        ["CloseTool", "Translate", "Scale", "EditCtrl", "AddCtrl", "RemoveCtrl", "Move", "ZoomIn", "ZoomOut", "ResetView", "Background"],
+        "btnSelect");
+    } else if(this.toolMode == "view") {
+      this.SetToolMode("move")
+    } else if(this.toolMode == "move") {
+      this.SetToolModeHelper(
+        ["CloseTool", "Move", "ZoomIn", "ZoomOut", "ResetView", "Background"],
+        ["Select", "Transform", "Draw", "EditCtrl", "AddCtrl", "RemoveCtrl", "View", "Translate", "Scale"],
+        "btnMove");
+    } else if(this.toolMode == "zoom_in") {
+      this.SetToolModeHelper(
+        ["CloseTool", "Move", "ZoomIn", "ZoomOut", "ResetView", "Background"],
+        ["Select", "Transform", "Draw", "EditCtrl", "AddCtrl", "RemoveCtrl", "View", "Translate", "Scale"],
+        "btnZoomIn");
+      this.ZoomIn();
+      this.DrawKanji();
+      this.SetToolMode("move")
+    } else if(this.toolMode == "zoom_out") {
+      this.SetToolModeHelper(
+        ["CloseTool", "Move", "ZoomIn", "ZoomOut", "ResetView", "Background"],
+        ["Select", "Transform", "Draw", "EditCtrl", "AddCtrl", "RemoveCtrl", "View", "Translate", "Scale"],
+        "btnZoomOut");
+      this.ZoomOut();
+      this.DrawKanji();
+      this.SetToolMode("move")
+    } else if(this.toolMode == "reset_view") {
+      this.SetToolModeHelper(
+        ["CloseTool", "Move", "ZoomIn", "ZoomOut", "ResetView", "Background"],
+        ["Select", "Transform", "Draw", "EditCtrl", "AddCtrl", "RemoveCtrl", "View", "Translate", "Scale"],
+        "btnResetView");
+      this.ResetZoom();
+    } else if(this.toolMode == "background") {
+      // If there is already a background
+      if(this.bgImage) {
+        // Remove the image
+        this.bgImage = undefined;
+      // Else there is no current background image
+      } else {
+        // Ask the user to select an image
+        this.LoadBgImage();
+      }
+      // Redraw the kanji
+      this.DrawKanji();
+      this.SetToolMode("move");
+    } else if(this.toolMode == "transform") {
+      if(this.selectedId == -1) {
+        this.PushMsg("Select an element first");
+        this.SetToolMode("select");
+      } else {
+        this.SetToolMode("translate");
+      }
+    } else if(this.toolMode == "translate") {
+      this.SetToolModeHelper(
+        ["CloseTool", "Translate", "Scale"],
+        ["Select", "Transform", "Draw", "EditCtrl", "AddCtrl", "RemoveCtrl", "View", "Move", "ZoomIn", "ZoomOut", "ResetView", "Background"],
+        "btnTranslate");
+    } else if(this.toolMode == "scale") {
+      this.SetToolModeHelper(
+        ["CloseTool", "Translate", "Scale"],
+        ["Select", "Transform", "Draw", "EditCtrl", "AddCtrl", "RemoveCtrl", "View", "Move", "ZoomIn", "ZoomOut", "ResetView", "Background"],
+        "btnScale");
+    } else if(this.toolMode == "draw") {
+      if(this.selectedId == -1) {
+        this.PushMsg("Select an element first");
+        this.SetToolMode("select");
+      } else {
+        this.SetToolMode("edit_ctrl");
+      }
+    } else if(this.toolMode == "edit_ctrl") {
+      this.SetToolModeHelper(
+        ["CloseTool", "EditCtrl", "AddCtrl", "RemoveCtrl"],
+        ["Select", "Transform", "Draw", "Translate", "Scale", "View", "Move", "ZoomIn", "ZoomOut", "ResetView", "Background"],
+        "btnEditCtrl");
+    } else if(this.toolMode == "add_ctrl") {
+      this.SetToolModeHelper(
+        ["CloseTool", "EditCtrl", "AddCtrl", "RemoveCtrl"],
+        ["Select", "Transform", "Draw", "Translate", "Scale", "View", "Move", "ZoomIn", "ZoomOut", "ResetView", "Background"],
+        "btnAddCtrl");
+    } else if(this.toolMode == "remove_ctrl") {
+      this.SetToolModeHelper(
+        ["CloseTool", "EditCtrl", "AddCtrl", "RemoveCtrl"],
+        ["Select", "Transform", "Draw", "Translate", "Scale", "View", "Move", "ZoomIn", "ZoomOut", "ResetView", "Background"],
+        "btnRemoveCtrl");
+    }
+  }
+  // Reset the zoom to is default values
+  ResetZoom() {
+    // Reset the zoom
+    this.zoom = [0.0, 0.0, 5.0];
+    // Redraw the kanji
+    this.DrawKanji();
+  }
+  // Correct translation to keep 
+  // Zoom in
+  ZoomIn() {
+    let canvas = this.elem("canKanji");
+    let posCenter = [canvas.width / 2.0, canvas.height / 2.0];
+    let posBefore = [
+      (posCenter[0] - this.zoom[0]) / this.zoom[2],
+      (posCenter[1] - this.zoom[1]) / this.zoom[2]];
+    this.zoom[2] *= 1.1;
+    let posAfter = [
+      (posCenter[0] - this.zoom[0]) / this.zoom[2],
+      (posCenter[1] - this.zoom[1]) / this.zoom[2]];
+    this.zoom[0] -= (posBefore[0] - posAfter[0]) * this.zoom[2];
+    this.zoom[1] -= (posBefore[1] - posAfter[1]) * this.zoom[2];
+  }
+  // Zoom out
+  ZoomOut() {
+    let canvas = this.elem("canKanji");
+    let posCenter = [canvas.width / 2.0, canvas.height / 2.0];
+    let posBefore = [
+      (posCenter[0] - this.zoom[0]) / this.zoom[2],
+      (posCenter[1] - this.zoom[1]) / this.zoom[2]];
+    this.zoom[2] *= 0.9;
+    let posAfter = [
+      (posCenter[0] - this.zoom[0]) / this.zoom[2],
+      (posCenter[1] - this.zoom[1]) / this.zoom[2]];
+    this.zoom[0] -= (posBefore[0] - posAfter[0]) * this.zoom[2];
+    this.zoom[1] -= (posBefore[1] - posAfter[1]) * this.zoom[2];
+  }
+  // Add a new attribute to the currently selected element
+  BtnAddAttributeClick() {
+    // Close the input dialog
+    this.elem('divAttribute').style.display='none';
+    // If there is a selected 
+    if(this.selectedId != -1) {
+      this.Memorise();
+      // Get the selected attribute to add
+      let key = this.elem("selAttribute").value;
+      // Add the attribute to the selected element
+      let elem = this.kanji.GetElementById(this.selectedId);
+      elem.AddField(key);
+    }
+  }
+  // Add a new element to the childs of the selected elements
+  BtnAddElemClick() {
+    // Close the input dialog
+    this.elem('divNewElem').style.display='none';
+    // If there is a selected element
+    if(this.selectedId != -1) {
+      this.Memorise();
+      // Get the selected tag to add
+      let tag = this.elem("selTag").value;
+      // Add the child to the selected element
+      let elem = this.kanji.GetElementById(this.selectedId);
+      elem.AddChildElem(tag);
+    }
+  }
+  // Delete the selected element
+  BtnDeleteElemClick() {
+    // If there is a selected element
+    if(this.selectedId != -1) {
+      this.Memorise();
+      // Update the kanji
+      this.kanji.DeleteElem(this.selectedId);
+      // Reset the selection
+      this.selectedId = -1;
+      // Reset the DOM
+      this.UpdateDOM();
+      // Redraw the kanji
+      this.DrawKanji();
+    } else {
+      this.PushMsg("No element selected");
+    }
+  }
+  // Handler for the button to update automatically all the id attributes
+  BtnIdClick() {
+    this.Memorise();
+    this.kanji.UpdateIds();
+  }
+  // Handler for conversion from Kanji to hexa
+  ConvertKanji() {
+    try {
+      this.elem("inpHexa").value =
+        this.elem("inpKanji").value.codePointAt(0).toString(16).padStart(5, "0");
+    } catch(e) { this.elem("inpHexa").value = ""; }
+  }
+  // Handler for conversion from hexa to Kanji
+  ConvertHexa() {
+    try {
+      this.elem("inpKanji").value =
+        String.fromCodePoint(parseInt(this.elem("inpHexa").value, 16));
+    } catch(e) { this.elem("inpKanji").value = ""; }
+  }
+  // Handler for 'new' button (reset the raw data to an empty template)
+  BtnNewClick() {
+    this.kanji = new Kanji();
+    this.kanji.prefix = `<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.0//EN\" \"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd\" [
+<!ATTLIST g
+xmlns:kvg CDATA #FIXED \"http://kanjivg.tagaini.net\"
+kvg:element CDATA #IMPLIED
+kvg:variant CDATA #IMPLIED
+kvg:partial CDATA #IMPLIED
+kvg:original CDATA #IMPLIED
+kvg:part CDATA #IMPLIED
+kvg:number CDATA #IMPLIED
+kvg:tradForm CDATA #IMPLIED
+kvg:radicalForm CDATA #IMPLIED
+kvg:position CDATA #IMPLIED
+kvg:radical CDATA #IMPLIED
+kvg:phon CDATA #IMPLIED >
+<!ATTLIST path
+xmlns:kvg CDATA #FIXED \"http://kanjivg.tagaini.net\"
+kvg:type CDATA #IMPLIED >
+]>
+`;
+    this.kanji.header = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"109\" height=\"109\" viewBox=\"0 0 109 109\">";
+
+    this.kanji.elems.push(new KanjiElem(undefined, 0, "g"));
+    this.kanji.elems[0].fields.push(
+      new KanjiKeyValue(this.kanji.elems[0], "id", "kvg:StrokePaths_00000", 1));
+    this.kanji.elems[0].fields.push(
+      new KanjiKeyValue(this.kanji.elems[0], "style", "fill:none;stroke:#000000;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;", 2));
+
+    this.kanji.elems[0].elems.push(new KanjiElem(this.kanji.elems[0], 3, "g"));
+    this.kanji.elems[0].elems[0].fields.push(
+      new KanjiKeyValue(this.kanji.elems[0].elems[0], "id", "kvg:00000", 4));
+    this.kanji.elems[0].elems[0].fields.push(
+      new KanjiKeyValue(this.kanji.elems[0].elems[0], "kvg:element", "一", 5));
+    this.kanji.elems[0].elems[0].fields.push(
+      new KanjiKeyValue(this.kanji.elems[0].elems[0], "kvg:radical", "general", 6));
+
+    this.kanji.elems[0].elems[0].elems.push(new KanjiElem(this.kanji.elems[0].elems[0], 7, "path"));
+    this.kanji.elems[0].elems[0].elems[0].fields.push(
+      new KanjiKeyValue(this.kanji.elems[0].elems[0].elems[0], "id", "kvg:00000-s1", 4));
+    this.kanji.elems[0].elems[0].elems[0].fields.push(
+      new KanjiKeyValue(this.kanji.elems[0].elems[0].elems[0], "type", "一", 5));
+    let d = "M11,54.25c3.19,0.62,6.25,0.75,9.73,0.5c20.64-1.5,50.39-5.12,68.58-5.24c3.6-0.02,5.77,0.24,7.57,0.49";
+    this.kanji.elems[0].elems[0].elems[0].fields.push(
+      new KanjiKeyValue(this.kanji.elems[0].elems[0].elems[0], "d", d, 6));
+    this.kanji.elems[0].elems[0].elems[0].fields[2].path = this.kanji.DecodeSvgPath(d);
+
+    this.kanji.elems.push(new KanjiElem(undefined, 7, "g"));
+    this.kanji.elems[1].fields.push(
+      new KanjiKeyValue(this.kanji.elems[1], "id", "kvg:StrokeNumbers_00000", 8));
+    this.kanji.elems[1].fields.push(
+      new KanjiKeyValue(this.kanji.elems[1], "style", "font-size:8;fill:#808080", 9));
+
+    this.kanji.elems[1].elems.push(new KanjiElem(this.kanji.elems[1], 10, "text"));
+    this.kanji.elems[1].elems[0].fields.push(
+      new KanjiKeyValue(this.kanji.elems[1].elems[0], "transform", "matrix(1 0 0 1 4.25 54.13)", 11));
+    this.kanji.elems[1].elems[0].fields.push(
+      new KanjiKeyValue(this.kanji.elems[1].elems[0], "text", "1", 12));
+
+    this.kanji.tail = "</svg>";
+    this.BtnEncodeClick();
+  }
+  // Handler for 'copy' button
+  BtnCopyClick() {
+    let success = false;
+    // If there is a selected element
+    if(this.selectedId != -1) {
+      // Get the encoding string for the selected element
+      let elem = this.kanji.GetElementById(this.selectedId);
+      let str = this.kanji.EncodeToKanjiVGDataRec([elem], 0);
+      // Copy the enconding string to the clipboard, check for succes as it
+      // may fail for security reason on some browsers
+      let txt = document.createElement('textarea');
+      txt.innerHTML = str;
+      document.body.appendChild(txt);
+      txt.select();
+      success = document.execCommand('copy');
+      if(success == false) this.PushMsg("Can't access clipboard");
+      document.body.removeChild(txt);
+    } else {
+      this.PushMsg("No element selected");
+      success = false;
+    }
+  }
+  // Handler for 'paste' button
+  async BtnPasteClick() {
+    // If there is a selected element
+    if(this.selectedId != -1) {
+      // If the element is a group
+      let elem = this.kanji.GetElementById(this.selectedId);
+      if(elem.tag == "g") {
+        try {
+          // Get the content of the clipboard
+          let clipboardContent = await navigator.clipboard.read();
+          for(const item of clipboardContent) {
+            if(item.types.includes("text/plain")) {
+              const blob = await item.getType("text/plain");
+              const str = await new Response(blob).text();
+              // Decode the string
+              this.Memorise();
+              let pastedElem = this.kanji.DecodeElems(str.split("\n"), elem);
+              // Recreate the DOM and redraw
+              this.UpdateDOM();
+              this.DrawKanji();
+              // Cancel eventual selection and reset the tool mode
+              this.selectedId = -1;
+              this.SetToolMode("select");
+            }
+          }
+        } catch(err) {
+          console.log(err);
+        }
+      }
+    } else {
+      this.PushMsg("No element selected");
+    }
+  }
+}
+// Variable to memorise the global KanjiVGEditor instance
+var editor = {};
+// Handler for the onload event
+window.onload = function() {
+  editor = new KanjiVGEditor();
+}
+  </script> 
+</html>
